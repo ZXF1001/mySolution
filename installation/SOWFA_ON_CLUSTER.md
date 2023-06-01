@@ -1,7 +1,7 @@
 [< 返回主页](../README.md)
 # 大集群上OpenFOAM-2.4.x和SOWFA的安装（无网络、无sudo权限）
 ## 〇. 准备工作
-根据以下下载链接下载安装包和依赖库的源码（如果链接失效，可以网上找对应版本的安装包下载），使用sftp工具上传到服务器的`~/upload`文件夹（注意：后面的步骤可能有的地方用到的tar路径不是这里的，注意修改）
+根据以下下载链接下载安装包和依赖库的源码（如果链接失效，可以网上找对应版本的安装包下载），使用sftp工具上传到服务器的`~/upload`文件夹
 
 [gcc-4.8.5](http://mirror.linux-ia64.org/gnu/gcc/releases/gcc-4.8.5/gcc-4.8.5.tar.gz)、
 [yaml-cpp-0.6.0](https://codeload.github.com/jbeder/yaml-cpp/tar.gz/refs/tags/yaml-cpp-0.6.0)、
@@ -16,29 +16,27 @@
 [scotch_6.0.3](https://www.labri.fr/perso/pelegrin/scotch/distrib/scotch_6.0.3.tar.gz)
 
 另外，OpenFOAM和SOWFA源码的压缩包保存在了[这个github仓库](https://github.com/ZXF1001/SOWFA_Installation_Files)中，下载下来，也上传到服务器的`~/upload`文件夹
-## 一. OpenFOAM2.4.x安装(基于[此网站](https://openfoamwiki.net/index.php/Installation/Linux/OpenFOAM-2.4.x/CentOS_SL_RHEL#CentOS_7.1)部分修改)
-### 1. 下载OpenFOAM2.4.x和ThirdParty-2.4.x
-打开一个新的终端窗口
+
+## 一. OpenFOAM2.4.x安装(基于[此网站](https://openfoamwiki.net/index.php/Installation/Linux/OpenFOAM-2.4.x/CentOS_SL_RHEL#CentOS_7.1)的步骤，有修改)
+### 1. 拷贝OpenFOAM2.4.x和ThirdParty-2.4.x源码并解压
+将`~/upload`目录下OpenFOAM和ThirdParty的压缩包拷贝到OpenFOAM的安装目录下，解压
 ```bash
 mkdir ~/OpenFOAM && cd ~/OpenFOAM
-# 将/file目录下OpenFOAM和ThirdParty的压缩包拷贝到这里
-tar -zxf OpenFOAM-2.4.x.tar.gz
-tar -zxf ThirdParty-2.4.x.tar.gz
+tar -zxvf ~/upload/OpenFOAM-2.4.x.tar.gz
+tar -zxvf ~/upload/ThirdParty-2.4.x.tar.gz
 ```
-### 2. 下载第三方依赖库
+
+### 2. 准备第三方依赖库
+将`~/upload`目录下的几个依赖库的压缩包解压到`~/OpenFOAM/ThirdParty-2.4.x`目录下
 ```bash
-cd ThirdParty-2.4.x
-mkdir download
-```
-将/files/目录下的几个压缩包通过sftp工具拷贝到这里的download文件夹，再解压到ThirdParty-2.4.x目录下
-```bash
-tar -zxf download/scotch_6.0.3.tar.gz
-tar -zxf download/cgal-releases-CGAL-4.6.tar.gz && mv cgal-releases-CGAL-4.6 CGAL-4.6
-tar -jxf download/boost_1_55_0.tar.bz2
-tar -zxf download/gcc-4.8.5.tar.gz
-tar -xf download/gmp-5.1.2.tar
-tar -zxf download/mpfr-3.1.2.tar.gz
-tar -zxf download/mpc-1.0.1.tar.gz
+cd ~/OpenFOAM/ThirdParty-2.4.x
+tar -zxvf ~/upload/scotch_6.0.3.tar.gz
+tar -zxvf ~/upload/cgal-releases-CGAL-4.6.tar.gz && mv cgal-releases-CGAL-4.6 CGAL-4.6
+tar -jxvf ~/upload/boost_1_55_0.tar.bz2
+tar -zxvf ~/upload/gcc-4.8.5.tar.gz
+tar -xvf ~/upload/gmp-5.1.2.tar.xz
+tar -zxvf ~/upload/mpfr-3.1.2.tar.gz
+tar -zxvf ~/upload/mpc-1.0.1.tar.gz
 ```
 ### 3. 设置环境变量
 修改源码中的boost版本
@@ -46,26 +44,25 @@ tar -zxf download/mpc-1.0.1.tar.gz
 cd ~/OpenFOAM
 sed -i -e 's=boost-system=boost_1_55_0=' OpenFOAM-2.4.x/etc/config/CGAL.sh
 ```
-设置调用的mpi库为openmpi3.1.2_ucx
+设置调用的mpi库为大服务器上的openmpi3.1.2_ucx
 ```bash
 export PATH=$PATH:/usr/local/openmpi3.1.2_ucx/bin/
-# 这里的WM_NCOMPPROCS设置为你编译要用的核数（大集群使用手册说不要在主节点上并行，故设为单核） 
 ```
 添加环境变量
 ```bash
+# 这里的WM_NCOMPPROCS设置为你编译要用的核数（大集群使用手册说不要在主节点上并行，故设为单核） 
 source $HOME/OpenFOAM/OpenFOAM-2.4.x/etc/bashrc WM_NCOMPPROCS=1
-
 echo "alias of24x='export PATH=\$PATH:/usr/local/openmpi3.1.2_ucx/bin/; source \$HOME/OpenFOAM/OpenFOAM-2.4.x/etc/bashrc $FOAM_SETTINGS'" >> $HOME/.bashrc
 echo 'of24x' >> $HOME/.bashrc
 source ~/.bashrc 
+of24x
 ```
 
 ### 4. 安装第三方依赖库
-通过makeGcc脚本编译安装CGAL需要的gmp和mpfr库
+通过makeGcc脚本编译安装CGAL需要的gmp和mpfr库（可能在最后编译安装gcc的时候会报错，可以不用管，因为需要的是前面的gmp和mpfr库）
 ```bash
 cd $WM_THIRD_PARTY_DIR
 ./makeGcc gcc-4.8.5
-# 可能在最后编译安装gcc的时候会报错，可以不用管，因为需要的是前面的gmp和mpfr库
 ```
 修改编译cgal要用到的库版本
 ```bash
@@ -175,66 +172,54 @@ qstat
 计算完成后，使用reconstructPar命令重建数据
 ```bash
 reconstructPar
-# 将数据文件传到本地，用paraview查看
+# 可以将数据文件下载到本地，用paraview查看
 ```
 
 ## 二. OpenFAST安装
 ### 1. 安装依赖
-如果还没有创建所有依赖库的安装目录，可以运行下面的命令创建
+#### 解压依赖库安装包
+建议创建一个依赖库的总的安装目录，可以运行下面的命令创建（这里用Packages文件夹，如果用其他名字注意安装过程中对应把Packages改成你的文件夹名）
 ```bash
-mkdir -p $HOME/Packages
+mkdir $HOME/Packages
 ```
-进入依赖库的安装目录
+将`~/upload`目录下的下列安装包解压到`$HOME/Packages/`目录下
 ```bash
 cd $HOME/Packages/
+tar -zxvf ~/upload/lapack-3.10.1.tar.gz
+tar -zxvf ~/upload/libxml2-v2.8.0.tar.gz
+mv libxml2-v2.8.0 libxml2-2.8.0
+tar -zxf ~/upload/hdf5-1.8.15.tar.gz
+tar -zxf ~/upload/yaml-cpp-yaml-cpp-0.6.0.tar.gz
+mv yaml-cpp-yaml-cpp-0.6.0 yaml-cpp-0.6.0
 ```
-将本文档下`files/OpenFAST/`目录下的安装包手动拷贝到`$HOME/Packages/`目录下
 #### BLAS&LAPACK
-解压安装包
 ```bash
-tar -zxf lapack-3.10.1.tgz && cd lapack-3.10.1
-```
-编译安装
-```bash
+cd $HOME/Packages/lapack-3.10.1
 cp make.inc.example make.inc
+# 默认直接安装到$HOME/Packages/lapack-3.10.1目录下
 make blaslib
 make lapacklib
 ```
 #### LibXml2
-解压安装包
 ```bash
-tar -zxf libxml2-2.8.0.tar.gz && cd libxml2-2.8.0
-```
-编译安装
-```bash
+cd $HOME/Packages/libxml2-2.8.0
 mkdir build && cd build
 ../configure --prefix=$HOME/Packages/libxml2-2.8.0/install
 make
 make install
 ```
 #### HDF5
-解压安装包
 ```bash
-tar -zxf hdf5-1.8.15.tar.gz && cd hdf5-1.8.15
-```
-编译安装
-```bash
+cd $HOME/Packages/hdf5-1.8.15
 mkdir build && cd build
 ../configure --prefix=$HOME/Packages/hdf5-1.8.15/install
 make
 make check
 make install
 ```
-
 #### ymal-cpp
-解压安装包
 ```bash
-tar -zxf yaml-cpp-yaml-cpp-0.6.0.tar.gz
-mv yaml-cpp-yaml-cpp-0.6.0 yaml-cpp-0.6.0
-```
-编译安装
-```bash
-cd yaml-cpp-0.6.0
+cd $HOME/Packages/yaml-cpp-0.6.0
 mkdir build && cd build
 cmake .. \
 -DCMAKE_INSTALL_PREFIX="$HOME/Packages/yaml-cpp-0.6.0/install" \
@@ -244,16 +229,13 @@ make install
 ```
 
 ### 2. 安装OpenFAST-2.4.0
-将文档下的`files/OpenFAST/openfast-2.4.0.tar.gz`拷贝到服务器的安装目录下，这里以`$HOME/Programs`为例
+将`~/upload/openfast-2.4.0.tar.gz`解压到安装目录下，这里以安装到`$HOME/Programs`为例
 ```bash
-cd ~/Programs
-```
-解压安装包
-```bash
-tar -zxf openfast-2.4.0.tar.gz
+mkdir ~/Programs && cd ~/Programs
+tar -zxvf ~/upload/openfast-2.4.0.tar.gz
 cd openfast-2.4.0
 ```
-激活intel编译器环境变量
+激活大服务器上的intel编译器环境变量
 ```bash
 source /opt/intel/parallel_studio_xe_2020/bin/psxevars.sh intel64
 ```
@@ -261,7 +243,7 @@ source /opt/intel/parallel_studio_xe_2020/bin/psxevars.sh intel64
 ```bash
 mkdir build && cd build
 ```
-配置编译选项（注意这里的依赖库路径要和你安装的路径对应）
+配置编译选项（注意这里的依赖库路径要和你的依赖库安装的路径对应）
 ```bash
 cmake .. \
 -DBLAS_LIBRARIES="$HOME/Packages/lapack-3.10.1" \
@@ -289,10 +271,10 @@ make install
 
 ## 三. SOWFA的安装
 ### 1. 拷贝源码
-将本文档`/files`目录下的SOWFA.tar.gz拷贝到服务器的`$HOME/OpenFOAM/`目录下，并进入目录
+将`~/upload/SOWFA.tar.gz`解压到SOWFA安装目录下，这里安装到`~/OpenFOAM`目录下
 ```bash
 cd ~/OpenFOAM
-tar -zxf SOWFA.tar.gz
+tar -zxvf ~/upload/SOWFA.tar.gz
 cd SOWFA
 ```
 ### 2. 修改源码错误
@@ -342,7 +324,7 @@ export HDF5_DIR=$HOME/Packages/hdf5-1.8.15/install
 export LD_LIBRARY_PATH=$SOWFA_LIBBIN:$OPENFAST_DIR/lib:$LD_LIBRARY_PATH
 export PATH=$SOWFA_APPBIN:$OPENFAST_DIR/bin:$PATH
 ```
-把这个启动命令加入到`~/.bashrc`文件中
+把这个SOWFA启动命令加入到`~/.bashrc`文件中
 ```bash
 echo "alias SOWFA = 'of24x && source ~/.sowfarc'" >> ~/.bashrc
 ```
@@ -409,6 +391,7 @@ cd example.ABL.flatTerrain.neutral
 #$ -pe mpi 8-8
 
 source ~/.bashrc
+# 需要下面这行命令激活sowfa环境变量
 source ~/.sowfarc
 hash -r
 export path=$TMPDIR:$path
@@ -441,7 +424,7 @@ nCores改为你有的核数，比如8，decompOrder改为(2,2,2)，要保证乘�
 #### 修改system/controlDict.1文件
 将endTime改为1000，writeInterval改为100
 #### 运行计算
-网格预处理
+网格预处理（此处为了方便，直接用主节点进行预处理了，如果网格量多，就需要写任务脚本提交到计算节点处理）
 ```bash
 ./runscript.preprocess
 ```
@@ -453,9 +436,9 @@ ssub runscript.solve.1
 # 查看任务
 qstat
 ```
-可以通过`log.n.setFieldsABL`和`log.n.ABLSolver`文件来查看结果
+可以通过`log.1.setFieldsABL`和`log.1.ABLSolver`文件来查看结果
 
-合并多核结果
+合并多核结果（此处为了方便，直接用主节点进行预处理了，如果网格量多，就需要写任务脚本提交到计算节点处理）
 ```bash
 reconstructPar
 ```
