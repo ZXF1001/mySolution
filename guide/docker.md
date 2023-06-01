@@ -111,6 +111,7 @@
     -p 80:80 \
     --network app-network \
     --network-alias nginx \
+    -e TZ=Asia/Shanghai \
     -v ~/Docker/nginx/conf/nginx.conf:/etc/nginx/nginx.conf \
     -v ~/Docker/nginx/conf/conf.d:/etc/nginx/conf.d \
     -v ~/Docker/nginx/html:/usr/share/nginx/html \
@@ -147,11 +148,7 @@
     在~/Docker/public下创建/DEM文件夹，访问`http://宿主机ip/DEM/`，如果看见/DEM目录下的文件列表则说明成功。
 
 ## 3.2 使用Dockerfile部署nginx-1.22
-1. 新建文件夹
-    ```bash
-    mkdir -p ~/Docker/nginx
-    ```
-2. 在`~/Docker/nginx`下新建`conf`文件夹，用来存放nginx配置文件
+1. 在`~/Docker/nginx`下新建`conf`文件夹，用来存放nginx配置文件
     ```bash
     mkdir -p ~/Docker/nginx/conf
     ```
@@ -163,16 +160,15 @@
 4. 在`~/Docker/nginx`下新建`Dockerfile`文件，内容如下：
     ```bash
     FROM nginx:1.22
+    RUN mkdir -p /usr/share/nginx/public
     COPY ./conf/nginx.conf /etc/nginx/nginx.conf
-    COPY ./conf/conf.d/default.conf /etc/nginx/conf.d/default.conf
-    COPY ./html /usr/share/nginx/html
-    COPY ./public /usr/share/nginx/public
+    COPY ./conf/conf.d/ /etc/nginx/conf.d/
+    COPY ./html/ /usr/share/nginx/html/
     EXPOSE 80
-    CMD ["nginx", "-g", "daemon off;"]
     ```
 5. 构建镜像
     ```bash
-    docker build -t my_nginx .
+    docker build -t my_nginx ~/Docker/nginx
     ```
 6. 启动nginx并加入网络
     ```bash
@@ -180,11 +176,18 @@
     -p 80:80 \
     --network app-network \
     --network-alias nginx \
+    -e TZ=Asia/Shanghai \
     -v ~/Docker/nginx/conf/nginx.conf:/etc/nginx/nginx.conf \
     -v ~/Docker/nginx/conf/conf.d:/etc/nginx/conf.d \
     -v ~/Docker/nginx/html:/usr/share/nginx/html \
+    -v ~/Docker/nginx/log:/var/log/nginx \
     -v ~/Docker/public:/usr/share/nginx/public \
     -d my_nginx
+    ```
+7. 如果有更新设置，更新设置后，重启nginx服务
+    ```bash
+    docker exec -it c_nginx bash
+    nginx -s reload
     ```
 
 ## 4. 部署mysql-5.7.38
@@ -285,7 +288,7 @@
     WORKDIR /app
     RUN npm install
     EXPOSE 3000
-    CMD npm run start
+    CMD npm run start > express.log 2>&1
     ```
 3. 将项目拷贝到`~/Docker/express/app`下
 4. 构建镜像
@@ -296,7 +299,7 @@
     ```bash
     docker run -d \
     --name c_express \
-    -p 3000:3000 \
+    -e TZ=Asia/Shanghai \
     --network app-network \
     --network-alias express \
     my_express
@@ -320,7 +323,7 @@
     COPY ./app /app
     WORKDIR /app
     RUN npm install
-    CMD npm run start
+    CMD npm run start > qweather.log 2>&1
     ```
 4. 构建镜像
     ```bash
@@ -332,6 +335,7 @@
     --name c_qweather \
     --network app-network \
     --network-alias qweather \
+    -e TZ=Asia/Shanghai \
     my_qweather
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
@@ -350,8 +354,8 @@
     RUN mkdir /runtime
     ADD .  /runtime
     WORKDIR /runtime
-    RUN pip3 install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
-    CMD ["python", "app.py"]
+    RUN pip3 install -r requirements.txt -i https://mirrors.zju.edu.cn/pypi/web/simple
+    CMD python app.py > ./realtimeData.log 2>&1
     ```
 3. 构建镜像
     ```bash
@@ -363,6 +367,7 @@
     --name c_realtimedata \
     --network app-network \
     --network-alias realtimedata \
+    -e TZ=Asia/Shanghai \
     my_realtimedata
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
@@ -373,35 +378,41 @@
     ```bash
     pip list --format=freeze > requirements.txt
     ```
-    其中，要把distribute，pip，setuptools，wheel这几个包删除。
+    其中，要把distribute，pip，setuptools，wheel这几个包删除，还要把pywin32这个删除。
 2. 项目拷贝到`~/Docker/flask`下
     并将文件夹重命名为app
-3. 新建Dockerfile
+3. 创建日志文件夹
+    ```bash
+    mkdir -p ~/Docker/flask/log
+    ```
+4. 新建Dockerfile
     ```bash
     vim ~/Docker/flask/Dockerfile
     ```
     写入以下内容：
     ```Dockerfile
     FROM python:3.10.9
-    RUN mkdir /runtime
+    RUN mkdir -p /runtime/app
+    RUN mkdir -p /runtime/log
     COPY requirements.txt /runtime
-    WORKDIR /runtime
-    RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
-    COPY ./app ./
+    RUN pip3 install -r /runtime/requirements.txt -i https://mirrors.zju.edu.cn/pypi/web/simple
+    COPY app /runtime/app
     EXPOSE 5000
-    CMD ["python", "./app/app.py"]
+    WORKDIR /runtime/app
+    CMD python /runtime/app/app.py > /runtime/log/flask.log 2>&1
     ```
-4. 构建镜像
+5. 构建镜像
     ```bash
     docker build -t my_flask ~/Docker/flask
     ```
-5. 启动容器，并加入网络
+6. 启动容器，并加入网络
     ```bash
     docker run -d \
     --name c_flask \
-    -p 5000:5000 \
     --network app-network \
     --network-alias flask \
-    flask
+    -e TZ=Asia/Shanghai \
+    -v ~/Docker/flask/log:/runtime/log \
+    my_flask
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
