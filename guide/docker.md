@@ -302,3 +302,106 @@
     my_express
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
+
+## 6. 部署node应用（qweather）
+1. clone项目到`~/Docker/service/qweather`下
+    ```bash
+    git clone https://gitee.com/zxf001/wind-platform-service.git
+    ```
+    并将文件夹重命名为app
+2. 将package.json中的nodemon改成node
+3. 新建Dockerfile
+    ```bash
+    vim ~/Docker/service/qweather/Dockerfile
+    ```
+    写入以下内容：
+    ```Dockerfile
+    FROM node:18.14.2
+    COPY ./app /app
+    WORKDIR /app
+    RUN npm install
+    CMD npm run start
+    ```
+4. 构建镜像
+    ```bash
+    docker build -t my_qweather ~/Docker/service/qweather
+    ```
+5. 启动容器，并加入网络
+    ```bash
+    docker run -d \
+    --name c_qweather \
+    --network app-network \
+    --network-alias qweather \
+    my_qweather
+    ```
+    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
+
+## 7. 部署python应用
+1. 项目拷贝到`~/Docker/service/realtimeData`下
+    
+    并将文件名重命名为app.py
+2. 新建Dockerfile
+    ```bash
+    vim ~/Docker/service/realtimeData/Dockerfile
+    ```
+    写入以下内容：
+    ```Dockerfile
+    FROM python:3.6.9
+    RUN mkdir /runtime
+    ADD .  /runtime
+    WORKDIR /runtime
+    RUN pip3 install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
+    CMD ["python", "app.py"]
+    ```
+3. 构建镜像
+    ```bash
+    docker build -t my_realtimedata ~/Docker/service/realtimeData
+    ```
+4. 启动容器，并加入网络
+    ```bash
+    docker run -d \
+    --name c_realtimedata \
+    --network app-network \
+    --network-alias realtimedata \
+    my_realtimedata
+    ```
+    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
+
+## 7. 部署flask框架
+总体和部署python应用一样，只是导出requirements.txt的时候注意全部使用版本号的形式。
+1. 在开发环境导出requirements.txt
+    ```bash
+    pip list --format=freeze > requirements.txt
+    ```
+    其中，要把distribute，pip，setuptools，wheel这几个包删除。
+2. 项目拷贝到`~/Docker/flask`下
+    并将文件夹重命名为app
+3. 新建Dockerfile
+    ```bash
+    vim ~/Docker/flask/Dockerfile
+    ```
+    写入以下内容：
+    ```Dockerfile
+    FROM python:3.10.9
+    RUN mkdir /runtime
+    COPY requirements.txt /runtime
+    WORKDIR /runtime
+    RUN pip3 install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+    COPY ./app ./
+    EXPOSE 5000
+    CMD ["python", "./app/app.py"]
+    ```
+4. 构建镜像
+    ```bash
+    docker build -t my_flask ~/Docker/flask
+    ```
+5. 启动容器，并加入网络
+    ```bash
+    docker run -d \
+    --name c_flask \
+    -p 5000:5000 \
+    --network app-network \
+    --network-alias flask \
+    flask
+    ```
+    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
