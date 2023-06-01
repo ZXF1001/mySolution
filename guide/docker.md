@@ -190,30 +190,14 @@
     nginx -s reload
     ```
 
-## 4. 部署mysql-5.7.38
+## 4. 部署mysql-5.7.39
 1. 拉取mysql镜像
     ```bash
-    docker pull mysql:5.7.38
+    docker pull mysql:5.7.39
     ```
 2. 新建文件夹用来存放mysql配置文件和数据
     ```bash
-    mkdir -p ~/Docker/mysql/conf
     mkdir -p ~/Docker/mysql/data
-    mkdir -p ~/Docker/mysql/log
-    ```
-3. 先建一个容器，把其中的设置文件拷贝出来
-    ```bash
-    docker run --name c_mysql \
-    -p 3306:3306 \
-    -e MYSQL_ROOT_PASSWORD=123456 \
-    -d mysql:5.7.38
-    
-    docker cp c_mysql:/etc/my.cnf ~/Docker/mysql/conf
-    ```
-4. 停止并删除容器
-    ```bash
-    docker stop c_mysql
-    docker rm c_mysql
     ```
 5. 启动mysql，并加入网络
    ```bash
@@ -222,19 +206,19 @@
     --name=c_mysql \
     --network app-network \
     --network-alias mysql \
-    -v ~/Docker/mysql/log:/var/log/mysql \
     -v ~/Docker/mysql/data:/var/lib/mysql \
-    -v ~/Docker/mysql/conf/my.cnf:/etc/my.cnf \
     -e MYSQL_ROOT_PASSWORD=123456 \
     -e TZ=Asia/Shanghai \
-    mysql:5.7.38
+    mysql:5.7.39 \
+    --character-set-server=utf8mb4 \
+    --collation-server=utf8mb4_unicode_ci
     ```
-6. 查看mysql是否启动成功
+6. 等待十秒，等初始化完成，查看mysql是否启动成功
     ```bash
     docker exec -it c_mysql /bin/sh
     mysql -uroot -p
     ```
-    这一步第一次可能不成功，退出重新进入就能成功。如果出现`mysql>`则说明启动成功。
+    没初始化完就进去可能不成功，退出重新等待几秒进入就能成功。如果出现`mysql>`则说明启动成功。
 
 7. 禁止远程登录root，并创建远程用户
     ```SQL
@@ -247,36 +231,52 @@
     GRANT ALL PRIVILEGES ON zxf.* TO 'zxf'@'%';
     FLUSH PRIVILEGES;
     ```
-8. 修改mysql配置文件
-    ```bash
-    vim ~/Docker/mysql/conf/my.cnf
-    ```
-    在`[client]`、`[mysql]`、`[mysqld]`下添加以下内容：
-    ```bash
-    [client]
-    default-character-set=utf8mb4
-
-    [mysql]
-    default-character-set=utf8mb4
-
-    [mysqld]
-    init_connect="SET collation_connection = utf8mb4_unicode_ci"
-    init_connect="SET NAMES utf8mb4"
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
-    skip-character-set-client-handshake
-    ```
-9. 重启mysql
-    ```bash
-    docker restart c_mysql
-    ```
-## 4.1 导入数据库
+### 4.1 导入数据库
 1. 将数据库文件拷贝到`~/Docker/mysql/data`下
-## 5. 部署express后端服务（node-18.14.2）
+## 5. Dockerfile部署mysql
+1. 在目录下创建Dockerfile，内容如下
+    ```Dockerfile
+    FROM mysql:5.7.38
+    WORKDIR /docker-entrypoint-initdb.d
+    ENV LANG=C.UTF-8
+    ENV TZ=Asia/Shanghai
+    RUN mkdir /mysql
+    COPY import.sql /mysql
+    ADD init.sql .
+    WORKDIR /
+    EXPOSE 3306
+    ```
+2. 目录下放置init.sql（用于初始化的主文件，包括导入数据，创建用户，禁止root远程连接，改权限）和import.sql（要导入的数据）
+
+3. 打包
+    ```bash
+    docker build -t my_mysql .
+    ```
+4. 建立data文件夹
+    ```bash
+    mkdir -p ~/Docker/mysql/data
+    ```
+
+5. 运行容器
+    ```bash
+    docker run \
+    --name c_mysql \
+    --network app-network \
+    --network-alias mysql \
+    -v ~/Docker/mysql/data:/var/lib/mysql \
+    -p 3306:3306 \
+    -e MYSQL_ROOT_PASSWORD=Waityou31. \
+    -d my_mysql \
+    --character-set-server=utf8mb4 \
+    --collation-server=utf8mb4_unicode_ci
+    ```
+
+## 6. 部署express后端服务（node-18.14.2）
 1. 创建文件夹
     ```bash
-    mkdir -p ~/Docker/express
+    mkdir -p ~/Docker/express/log
     ```
+
 2. 新建Dockerfile
     ```bash
     vim ~/Docker/express/Dockerfile
@@ -286,27 +286,32 @@
     FROM node:18.14.2
     COPY ./app /app
     WORKDIR /app
+    RUN mkdir /log
     RUN npm install
     EXPOSE 3000
-    CMD npm run start > express.log 2>&1
+    CMD npm run start > /log/express.log 2>&1
     ```
+
 3. 将项目拷贝到`~/Docker/express/app`下
+
 4. 构建镜像
     ```bash
     docker build -t my_express ~/Docker/express
     ```
+
 5. 启动容器，并加入网络
     ```bash
     docker run -d \
     --name c_express \
     -e TZ=Asia/Shanghai \
+    -v ~/Docker/express/log:/log \
     --network app-network \
     --network-alias express \
     my_express
     ```
-    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
+    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因（或者docker log）
 
-## 6. 部署node应用（qweather）
+## 7. 部署node应用（qweather）
 1. clone项目到`~/Docker/service/qweather`下
     ```bash
     git clone https://gitee.com/zxf001/wind-platform-service.git
@@ -322,25 +327,28 @@
     FROM node:18.14.2
     COPY ./app /app
     WORKDIR /app
+    RUN mkdir /log
     RUN npm install
-    CMD npm run start > qweather.log 2>&1
+    CMD npm run start > /log/qweather.log 2>&1
     ```
 4. 构建镜像
     ```bash
     docker build -t my_qweather ~/Docker/service/qweather
     ```
-5. 启动容器，并加入网络
+5. 创建log文件夹
+6. 启动容器，并加入网络
     ```bash
     docker run -d \
     --name c_qweather \
     --network app-network \
     --network-alias qweather \
     -e TZ=Asia/Shanghai \
+    -v ~/Docker/service/qweather/log:/log \
     my_qweather
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
 
-## 7. 部署python应用
+## 8. 部署python应用
 1. 项目拷贝到`~/Docker/service/realtimeData`下
     
     并将文件名重命名为app.py
@@ -351,28 +359,30 @@
     写入以下内容：
     ```Dockerfile
     FROM python:3.6.9
-    RUN mkdir /runtime
+    RUN mkdir -p /runtime/log
     ADD .  /runtime
     WORKDIR /runtime
     RUN pip3 install -r requirements.txt -i https://mirrors.zju.edu.cn/pypi/web/simple
-    CMD python app.py > ./realtimeData.log 2>&1
+    CMD python app.py > ./log/realtimeData.log 2>&1
     ```
 3. 构建镜像
     ```bash
     docker build -t my_realtimedata ~/Docker/service/realtimeData
     ```
-4. 启动容器，并加入网络
+4. 创建log文件夹
+5. 启动容器，并加入网络
     ```bash
     docker run -d \
     --name c_realtimedata \
     --network app-network \
     --network-alias realtimedata \
     -e TZ=Asia/Shanghai \
+    -v ~/Docker/service/realtimeData/log:/runtime/log \
     my_realtimedata
     ```
     如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
 
-## 7. 部署flask框架
+## 9. 部署flask框架
 总体和部署python应用一样，只是导出requirements.txt的时候注意全部使用版本号的形式。
 1. 在开发环境导出requirements.txt
     ```bash
@@ -415,4 +425,4 @@
     -v ~/Docker/flask/log:/runtime/log \
     my_flask
     ```
-    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因
+    如果进去就退出，可以把-d改成-it，去容器内部命令行检查问题原因（或者docker log）
