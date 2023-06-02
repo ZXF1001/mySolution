@@ -265,7 +265,7 @@
     --network-alias mysql \
     -v ~/Docker/mysql/data:/var/lib/mysql \
     -p 3306:3306 \
-    -e MYSQL_ROOT_PASSWORD=Waityou31. \
+    -e MYSQL_ROOT_PASSWORD=123456 \
     -d my_mysql \
     --character-set-server=utf8mb4 \
     --collation-server=utf8mb4_unicode_ci
@@ -360,10 +360,11 @@
     ```Dockerfile
     FROM python:3.6.9
     RUN mkdir -p /runtime/log
-    ADD .  /runtime
+    COPY .  /runtime
     WORKDIR /runtime
-    RUN pip3 install -r requirements.txt -i https://mirrors.zju.edu.cn/pypi/web/simple
+    RUN pip3 install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
     CMD python app.py > ./log/realtimeData.log 2>&1
+
     ```
 3. 构建镜像
     ```bash
@@ -405,7 +406,7 @@
     RUN mkdir -p /runtime/app
     RUN mkdir -p /runtime/log
     COPY requirements.txt /runtime
-    RUN pip3 install -r /runtime/requirements.txt -i https://mirrors.zju.edu.cn/pypi/web/simple
+    RUN pip3 install -r /runtime/requirements.txt -i https://mirrors.aliyun.com/pypi/simple/
     COPY app /runtime/app
     EXPOSE 5000
     WORKDIR /runtime/app

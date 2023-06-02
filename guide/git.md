@@ -8,7 +8,7 @@
     ```Powershell
     #端口号11223是梯子的端口号
     git config --global http.proxy http://127.0.0.1:11223
-    git config --global https.proxy http://127.0.0.1:11223
+    git config --global https.proxy https://127.0.0.1:11223
 
     #下两行可选，我也不知道是什么
     git config --global http.proxy 'socks5://127.0.0.1:11223'
