@@ -6,7 +6,7 @@
 [gcc-4.8.5](http://mirror.linux-ia64.org/gnu/gcc/releases/gcc-4.8.5/gcc-4.8.5.tar.gz)、
 [yaml-cpp-0.6.0](https://codeload.github.com/jbeder/yaml-cpp/tar.gz/refs/tags/yaml-cpp-0.6.0)、
 [hdf5-1.8.15](https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.15/src/hdf5-1.8.15.tar.gz)、
-[libxml2-2.8.0](https://gitlab.gnome.org/GNOME/libxml2/-/archive/v2.8.0/libxml2-v2.8.0.tar.gz)、
+[libxml2-2.8.0](http://xmlsoft.org/sources/libxml2-2.8.0.tar.gz)、
 [lapack-3.10.1](https://codeload.github.com/Reference-LAPACK/lapack/tar.gz/refs/tags/v3.10.1)、
 [openfast-2.4.0](https://codeload.github.com/OpenFAST/openfast/tar.gz/refs/tags/v2.4.0)、
 [mpc-1.0.1](https://mirrors.sjtug.sjtu.edu.cn/gnu/mpc/mpc-1.0.1.tar.gz)、
@@ -217,7 +217,7 @@ make
 make check
 make install
 ```
-#### ymal-cpp
+#### yaml-cpp
 ```bash
 cd $HOME/Packages/yaml-cpp-0.6.0
 mkdir build && cd build
