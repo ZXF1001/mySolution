@@ -14,6 +14,7 @@
 [CGAL-4.6](https://codeload.github.com/CGAL/cgal/tar.gz/refs/tags/releases/CGAL-4.6)、
 [boost-1.55.0](https://udomain.dl.sourceforge.net/project/boost/boost/1.55.0/boost_1_55_0.tar.bz2)、
 [scotch_6.0.3](https://www.labri.fr/perso/pelegrin/scotch/distrib/scotch_6.0.3.tar.gz)
+[cmake-3.26.3](https://cmake.org/files/v3.26/cmake-3.26.3-linux-x86_64.sh)
 
 另外，OpenFOAM和SOWFA源码的压缩包保存在了[这个github仓库](https://github.com/ZXF1001/SOWFA_Installation_Files)中，下载下来，也上传到服务器的`~/upload`文件夹
 
@@ -226,6 +227,20 @@ cmake .. \
 -DBUILD_SHARED_LIBS=ON 
 make
 make install
+```
+#### cmake-3.26.3
+```bash
+cd $HOME/Packages
+chmod +x ./cmake-3.26.3-linux-x86_64.sh
+# 执行安装脚本，路径保持默认，装在当前目录下
+./cmake-3.26.3-linux-x86_64.sh
+
+# 在~/.bashrc中添加以下内容并保存
+# export PATH=~/Programs/cmake-3.26.3-linux-x86_64/bin:$PATH
+
+source ~/.bashrc
+# 安装完成查看版本是否为3.26.3
+cmake --version
 ```
 
 ### 2. 安装OpenFAST-2.4.0
