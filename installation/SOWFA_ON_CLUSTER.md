@@ -340,7 +340,7 @@ export HDF5_DIR=$HOME/Packages/hdf5-1.8.15/install
 export LD_LIBRARY_PATH=$SOWFA_LIBBIN:$OPENFAST_DIR/lib:$LD_LIBRARY_PATH
 export PATH=$SOWFA_APPBIN:$OPENFAST_DIR/bin:$PATH
 ```
-把这个SOWFA启动命令加入到`~/.bashrc`文件中
+把SOWFA环境启动命令加入到`~/.bashrc`文件中
 ```bash
 echo "alias SOWFA = 'of24x && source ~/.sowfarc'" >> ~/.bashrc
 ```
