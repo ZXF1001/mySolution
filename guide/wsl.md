@@ -4,7 +4,16 @@
 ## 1. WSL2不通过微软商店安装Linux发行版
 
 ## 2. WSL2导入/导出tar包
+1. 导出tar包
+    ```powershell
+    wsl --export <distro_name> <path_to_save_tar>
+    ```
+2. 导入tar包
+    ```powershell
+    wsl --import <distro_name> <path_to_install> <path_to_tar>
+    ```
 ## 3. WSL2移动Linux的安装位置
+通过第二点的方法移动到新的位置即可
 
 ## 4. WSL2修改默认登陆用户
 1. 在wsl的linux系统中创建`/etc/wsl.conf`文件，内容如下:
