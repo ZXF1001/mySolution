@@ -405,6 +405,8 @@ cd example.ABL.flatTerrain.neutral
 #$ -cwd  
 #$ -q zone2.q  
 #$ -pe mpi 8-8
+export MKL_NUM_THREADS=1
+export OMP_NUM_THREADS=1
 
 source ~/.bashrc
 # 需要下面这行命令激活sowfa环境变量
