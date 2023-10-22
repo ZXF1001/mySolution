@@ -238,7 +238,7 @@ chmod +x ./cmake-3.26.3-linux-x86_64.sh
 ./cmake-3.26.3-linux-x86_64.sh
 
 # 将cmake加入环境变量
-echo "export PATH=~/Programs/cmake-3.26.3-linux-x86_64/bin:\$PATH" >> ~/.bashrc
+echo "export PATH=~/Packages/cmake-3.26.3-linux-x86_64/bin:\$PATH" >> ~/.bashrc
 
 source ~/.bashrc
 # 安装完成查看版本是否为3.26.3
